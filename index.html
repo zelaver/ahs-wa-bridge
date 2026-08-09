@@ -1,110 +1,101 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>Connect WhatsApp</title>
-        <style>
-            body {
-                font-family: -apple-system, sans-serif;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                margin: 0;
-                background: #f3f4f6;
-            }
-            #status {
-                text-align: center;
-                color: #374151;
-                padding: 20px;
-            }
-            .spinner {
-                border: 3px solid #e5e7eb;
-                border-top: 3px solid #1943b4;
-                border-radius: 50%;
-                width: 32px;
-                height: 32px;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 12px;
-            }
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div id="status">
-            <div class="spinner"></div>
-            <p>Membuka WhatsApp Signup...</p>
-        </div>
+<head>
+  <meta charset="utf-8" />
+  <title>Connect WhatsApp</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; display: flex; align-items: center;
+           justify-content: center; height: 100vh; margin: 0; background: #f3f4f6; }
+    #status { text-align: center; color: #374151; padding: 20px; }
+    .spinner { border: 3px solid #e5e7eb; border-top: 3px solid #1943b4; border-radius: 50%;
+               width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="status">
+    <div class="spinner"></div>
+    <p>Membuka WhatsApp Signup...</p>
+  </div>
 
-        <script src="https://connect.facebook.net/en_US/sdk.js" async defer crossorigin="anonymous"></script>
-        <script>
-            const META_APP_ID = "1014993644699904";
-            const CONFIG_ID = "2216522565867211";
+  <script src="https://connect.facebook.net/en_US/sdk.js" async defer crossorigin="anonymous"></script>
+  <script>
+    const META_APP_ID = "1014993644699904";
+    const CONFIG_ID = "2216522565867211";
 
-            let capturedWabaId = null;
-            let capturedPhoneNumberId = null;
+    let capturedWabaId = null;
+    let capturedPhoneNumberId = null;
 
-            window.addEventListener("message", (event) => {
-                if (!event.origin.endsWith("facebook.com")) return;
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === "WA_EMBEDDED_SIGNUP") {
-                        console.log("WA_EMBEDDED_SIGNUP event:", data);
-                        if (data.event === "FINISH") {
-                            capturedWabaId = data.data?.waba_id;
-                            capturedPhoneNumberId = data.data?.phone_number_id;
-                        }
-                    }
-                } catch (e) {
-                    // bukan JSON, abaikan
-                }
-            });
+    window.addEventListener('message', (event) => {
+      if (!event.origin.endsWith('facebook.com')) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'WA_EMBEDDED_SIGNUP') {
+          console.log('WA_EMBEDDED_SIGNUP event:', data);
+          if (data.event === 'FINISH') {
+            capturedWabaId = data.data?.waba_id;
+            capturedPhoneNumberId = data.data?.phone_number_id;
+          }
+        }
+      } catch (e) {
+        // bukan JSON, abaikan
+      }
+    });
 
-            window.fbAsyncInit = function () {
-                FB.init({
-                    appId: META_APP_ID,
-                    cookie: true,
-                    xfbml: false,
-                    version: "v26.0",
-                });
+    window.fbAsyncInit = function () {
+      FB.init({
+        appId: META_APP_ID,
+        cookie: true,
+        xfbml: false,
+        version: 'v26.0',
+      });
 
-                launchSignup();
-            };
+      launchSignup();
+    };
 
-            function launchSignup() {
-                FB.login(
-                    function (response) {
-                        document.getElementById("status").innerHTML = "<p>Menyelesaikan...</p>";
+    function launchSignup() {
+      FB.login(
+        function (response) {
+          document.getElementById('status').innerHTML = '<p>Menyelesaikan...</p>';
 
-                        if (response.authResponse && response.authResponse.code) {
-                            const code = response.authResponse.code;
+          if (response.authResponse && response.authResponse.code) {
+            const code = response.authResponse.code;
 
-                            setTimeout(() => {
-                                const params = new URLSearchParams({
-                                    code: code,
-                                    waba_id: capturedWabaId || "",
-                                    phone_number_id: capturedPhoneNumberId || "",
-                                });
-                                window.location.href = "ahs-admin://whatsapp-callback?" + params.toString();
-                            }, 500);
-                        } else {
-                            document.getElementById("status").innerHTML = "<p>Signup dibatalkan atau gagal.</p>";
-                            setTimeout(() => {
-                                window.location.href = "ahs-admin://whatsapp-callback?error=cancelled";
-                            }, 1500);
-                        }
-                    },
-                    {
-                        config_id: CONFIG_ID,
-                        response_type: "code",
-                        override_default_response_type: true,
-                    },
-                );
-            }
-        </script>
-    </body>
+            setTimeout(() => {
+              const params = new URLSearchParams({
+                code: code,
+                waba_id: capturedWabaId || '',
+                phone_number_id: capturedPhoneNumberId || '',
+              });
+              const redirectUrl = 'ahs-admin://whatsapp-callback?' + params.toString();
+
+              // Coba auto-redirect dulu
+              window.location.href = redirectUrl;
+
+              // Fallback: tampilkan tombol manual, karena browser sering
+              // block auto-redirect ke custom scheme yang dipicu dari JS callback
+              document.getElementById('status').innerHTML =
+                '<p>Berhasil! Tap tombol di bawah buat kembali ke app.</p>' +
+                '<a href="' + redirectUrl + '" ' +
+                'style="display:inline-block;margin-top:12px;padding:12px 24px;' +
+                'background:#1943b4;color:white;border-radius:8px;' +
+                'text-decoration:none;font-weight:600;">Kembali ke App</a>';
+            }, 500);
+          } else {
+            document.getElementById('status').innerHTML =
+              '<p>Signup dibatalkan atau gagal.</p>';
+            setTimeout(() => {
+              window.location.href = 'ahs-admin://whatsapp-callback?error=cancelled';
+            }, 1500);
+          }
+        },
+        {
+          config_id: CONFIG_ID,
+          response_type: 'code',
+          override_default_response_type: true,
+        }
+      );
+    }
+  </script>
+</body>
 </html>
